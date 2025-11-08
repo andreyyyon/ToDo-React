@@ -1,40 +1,73 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import './Todo.css';
+import List from "./components/List";
+import TodoForm from "./components/TodoForm";
+import Item from "./components/Item";
+import Modal from "./components/Modal";
+
+const SAVED_ITEMS = "savedItems";
 
 function Todo(){
-
-    const [text, setText] = useState("");
     const [items, setItems] = useState([]);
+    const [showModal, setShowModal] = useState(false);
 
-    function handleChange(event){
-        let t = event.target.value;
-        setText(t);
+    useEffect(() => {
+        let savedItems = JSON.parse(localStorage.getItem(SAVED_ITEMS));
+
+        if(savedItems){
+            setItems(savedItems);
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem(SAVED_ITEMS, JSON.stringify(items));
+    }, [items]);
+
+    function onAddItem(text){
+        let item = new Item(text);
+
+        setItems([...items, item])
+        onHideModal();
     }
 
-    function addItem(event){
-        event.preventDefault();
-        if(text.trim() !== ""){
-            setItems([...items, text]);
-            setText("");
-        }
+    function onItemDeleted(item){
+        let filteredItems = items.filter(it => it.id !== item.id);
+        setItems(filteredItems);
+    }
+
+    function onDone(item){
+        let updatedItems = items.map(it => {
+            if(it.id === item.id){
+                it.done = !it.done;
+            }
+            return it;
+        })
+
+        setItems(updatedItems);
+    }
+
+    function onHideModal(){
+        setShowModal(false);
     }
 
     return(
         <div className="container">
-            <h1>
-                teste
-            </h1>
-            <form>
-                <input onChange={handleChange} value={text} type="text"></input>
-                <button onClick={addItem}>Add</button>
-            </form>
+            <header className="header">
+                <h1>
+                    Todo
+                </h1>
+                <button onClick={() => setShowModal(true)} className="addButton">
+                    +
+                </button>
+            </header>
 
-            <ul>
-                {items.map(item => <li>{item}</li>)}
-            </ul>
+            <Modal show={showModal} onHideModal={onHideModal}>
+                {<TodoForm onAddItem={onAddItem}></TodoForm>}
+            </Modal>
+
+            <List onDone={onDone} onItemDeleted={onItemDeleted} items={items}></List>
         </div>
     )
-
 };
 
 export default Todo;
